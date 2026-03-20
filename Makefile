@@ -50,13 +50,13 @@ dry-run:
 	docker compose run --rm --entrypoint "" mgmt sh -c 'npx -y supabase --version || echo "❌ npx supabase failed"'
 	@echo ""
 	@echo "🔍 Checking Cloud API availability..."
-	docker compose run --rm --entrypoint "" mgmt sh -c 'source /config/migration.env && curl -s -o /dev/null -w "%{http_code}\n" "$$CLOUD_PROJECT_URL/auth/v1/health"'
+	docker compose run --rm --entrypoint "" mgmt sh -c '. /config/migration.env && curl -s -o /dev/null -w "%{http_code}\n" "$$CLOUD_PROJECT_URL/auth/v1/health"'
 	@echo ""
 	@echo "🔍 Checking local Kong API..."
 	docker compose run --rm --entrypoint "" mgmt sh -c 'curl -s -o /dev/null -w "%{http_code}\n" http://kong:8000'
 	@echo ""
 	@echo "🔍 Checking local Postgres..."
-	docker compose run --rm --entrypoint "" mgmt sh -c 'source /config/migration.env && psql "$$SELF_HOSTED_DB_URL" -c "SELECT 1;"'
+	docker compose run --rm --entrypoint "" mgmt sh -c '. /config/migration.env && psql "$$SELF_HOSTED_DB_URL" -c "SELECT 1;"'
 	@echo ""
 	@echo -e "${GREEN}Dry run complete.${RESET}"
 
