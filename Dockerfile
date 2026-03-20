@@ -5,10 +5,13 @@ RUN apt-get update && \
     apt-get install -y curl jq ca-certificates postgresql-client bash && \
     apt-get clean
 
-# Install Supabase CLI (official binary)
+RUN rm -f /usr/local/bin/supabase
+
+# Install Supabase CLI (stable LTS)
 RUN curl -sLo /usr/local/bin/supabase \
-      https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64 && \
+    https://github.com/supabase/cli/releases/download/v1.188.7/supabase_linux_amd64 && \
     chmod +x /usr/local/bin/supabase
+
 
 WORKDIR /scripts
 
