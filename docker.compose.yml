@@ -9,7 +9,7 @@ services:
     networks:
       - supabase-network
     volumes:
-      - /home/youruser/secrets/migration.env:/config/migration.env:ro
+      - /home/docker/secrets/migration.env:/config/migration.env:ro
     tty: true
 
 networks:
