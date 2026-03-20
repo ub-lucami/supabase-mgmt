@@ -5,8 +5,8 @@ RUN apt-get update && \
     apt-get clean
 
 # Install node + supabase CLI
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
-    apt-get install -y nodejs && \
+RUN apt-get update && \
+    apt-get install -y nodejs npm && \
     npm install -g supabase
 
 WORKDIR /scripts
