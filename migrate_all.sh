@@ -5,16 +5,13 @@ echo "=============================="
 echo " SUPABASE MIGRATION MANAGER"
 echo "=============================="
 
-# Load secrets
 source /config/migration.env
 
-# --- Supabase CLI wrapper (via Docker) -------------------
+########################################
+# SUPABASE CLI via NPX WRAPPER
+########################################
 supabase() {
-  docker run --rm \
-    -v /tmp:/tmp \
-    -v /config:/config \
-    -v /var/run/docker.sock:/var/run/docker.sock \
-    supabase/cli:latest "$@"
+  npx supabase "$@"
 }
 
 ########################################
@@ -38,7 +35,7 @@ psql "$SELF_HOSTED_DB_URL" -v ON_ERROR_STOP=1 \
   -f /tmp/data.sql
 
 ########################################
-# STORAGE BUCKET MIGRATION
+# STORAGE MIGRATION
 ########################################
 
 echo "📦 Exporting buckets from Cloud..."
@@ -71,7 +68,7 @@ echo "$BUCKETS" | jq -r '.[].name' | while read BUCKET; do
   done
 done
 
-echo "🚀 Uploading buckets to local storage..."
+echo "🚀 Uploading to local storage..."
 for BUCKET in $(ls /tmp/bucket_export); do
 
   curl -s -X POST \
