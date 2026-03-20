@@ -10,14 +10,14 @@ RESET := \033[0m
 
 help:
 	@echo ""
-	@echo - e "${CYAN}SUPABASE MANAGEMENT CONTAINER COMMANDS${RESET}"
+	@echo -e "${CYAN}SUPABASE MANAGEMENT CONTAINER COMMANDS${RESET}"
 	@echo ""
-	@echo - e "${GREEN}make build${RESET}     - zgradi mgmt container"
-	@echo - e "${GREEN}make rebuild${RESET}   - zgradi brez cache (priporočeno po spremembah)"
-	@echo - e "${GREEN}make run${RESET}       - zaženi migracijo"
-	@echo - e "${GREEN}make shell${RESET}     - odpri bash v mgmt containerju"
-	@echo - e "${GREEN}make log${RESET}       - izpiši zadnje loge migracije"
-	@echo - e "${GREEN}make clean${RESET}     - pobriši vse slike in kontejnarje"
+	@echo -e "${GREEN}make build${RESET}     - zgradi mgmt container"
+	@echo -e "${GREEN}make rebuild${RESET}   - zgradi brez cache (priporočeno po spremembah)"
+	@echo -e "${GREEN}make run${RESET}       - zaženi migracijo"
+	@echo -e "${GREEN}make shell${RESET}     - odpri bash v mgmt containerju"
+	@echo -e "${GREEN}make log${RESET}       - izpiši zadnje loge migracije"
+	@echo -e "${GREEN}make clean${RESET}     - pobriši vse slike in kontejnarje"
 	@echo ""
 
 build:
