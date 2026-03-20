@@ -33,14 +33,14 @@ Create:
 
 Example (fill real values):
 
-
+```
 CLOUD_PROJECT_URL=https://your-cloud.supabase.co
 CLOUD_DB_URL=postgres://...
 CLOUD_SERVICE_KEY=...
 SELF_HOSTED_DB_URL=postgres://postgres:password@db:5432/postgres
 SELF_SERVICE_KEY=...
 SELF_URL=http://storage:5000
-
+```
 ---
 
 ## 🛠 Setup
