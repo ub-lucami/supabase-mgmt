@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  mgmt:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: supabase-mgmt
+    networks:
+      - supabase-network
+    volumes:
+      - /home/youruser/secrets/migration.env:/config/migration.env:ro
+    tty: true
+
+networks:
+  supabase-network:
+    external: true

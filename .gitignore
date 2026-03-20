@@ -1,0 +1,24 @@
+# Node / npm artifacts (supabase CLI uses npm)
+node_modules/
+npm-debug.log
+package-lock.json
+
+# Python cache (safe)
+__pycache__/
+*.pyc
+
+# OS clutter
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# Docker junk
+*.pid
+
+# Security: DO NOT ALLOW ENV SECRETS IN REPO
+*.env
+config/
+secrets/
+migration.env
