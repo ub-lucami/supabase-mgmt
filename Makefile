@@ -39,7 +39,7 @@ run:
 	docker compose run --rm mgmt
 
 dry-run:
-	@echo "-e ${YELLOW}=== DRY RUN: CHECKING ENV, NETWORK & ACCESS ===${RESET}"
+	@echo -e "${YELLOW}=== DRY RUN: CHECKING ENV, NETWORK & ACCESS ===${RESET}"
 	@echo "🔍 Checking if migration.env is mounted..."
 	docker compose run --rm mgmt sh -c 'test -f /config/migration.env && echo "✔ migration.env OK" || echo "❌ migration.env missing"'
 	@echo ""
@@ -55,7 +55,7 @@ dry-run:
 	@echo "🔍 Checking local Postgres..."
 	docker compose run --rm mgmt sh -c 'source /config/migration.env && psql $$SELF_HOSTED_DB_URL -c "SELECT 1;"'
 	@echo ""
-	@echo "-e ${GREEN}Dry run complete.${RESET}"
+	@echo -e "${GREEN}Dry run complete.${RESET}"
 
 shell:
 	docker compose run --rm mgmt bash
