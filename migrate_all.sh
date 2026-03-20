@@ -5,7 +5,17 @@ echo "=============================="
 echo " SUPABASE MIGRATION MANAGER"
 echo "=============================="
 
+# Load secrets
 source /config/migration.env
+
+# --- Supabase CLI wrapper (via Docker) -------------------
+supabase() {
+  docker run --rm \
+    -v /tmp:/tmp \
+    -v /config:/config \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    supabase/cli:latest "$@"
+}
 
 ########################################
 # DATABASE MIGRATION
@@ -20,7 +30,7 @@ supabase db dump --db-url "$CLOUD_DB_URL" -f /tmp/schema.sql
 echo "🔄 Dumping data..."
 supabase db dump --db-url "$CLOUD_DB_URL" -f /tmp/data.sql --use-copy --data-only
 
-echo "📦 Restoring dumps into Self-hosted DB..."
+echo "📦 Restoring into local Postgres..."
 psql "$SELF_HOSTED_DB_URL" -v ON_ERROR_STOP=1 -f /tmp/roles.sql
 psql "$SELF_HOSTED_DB_URL" -v ON_ERROR_STOP=1 -f /tmp/schema.sql
 psql "$SELF_HOSTED_DB_URL" -v ON_ERROR_STOP=1 \
@@ -30,26 +40,29 @@ psql "$SELF_HOSTED_DB_URL" -v ON_ERROR_STOP=1 \
 ########################################
 # STORAGE BUCKET MIGRATION
 ########################################
-echo "📦 Exporting buckets..."
+
+echo "📦 Exporting buckets from Cloud..."
 mkdir -p /tmp/bucket_export
 
-BUCKETS=$(curl -s -H "Authorization: Bearer $CLOUD_SERVICE_KEY" -H "apikey: $CLOUD_SERVICE_KEY" "$CLOUD_PROJECT_URL/storage/v1/bucket")
+BUCKETS=$(curl -s \
+  -H "Authorization: Bearer $CLOUD_SERVICE_KEY" \
+  -H "apikey: $CLOUD_SERVICE_KEY" \
+  "$CLOUD_PROJECT_URL/storage/v1/bucket")
 
 echo "$BUCKETS" | jq -r '.[].name' | while read BUCKET; do
-  mkdir -p "/tmp/bucket_export/$BUCKET"
   echo "➡️ Bucket: $BUCKET"
+  mkdir -p "/tmp/bucket_export/$BUCKET"
 
   OBJECTS=$(curl -s -X POST \
-    -H "Authorization: Bearer $CLOUD_SERVICE_KEY" \
-    -H "apikey: $CLOUD_SERVICE_KEY" \
-    -H "Content-Type: application/json" \
-    -d '{"prefix":""}' \
-    "$CLOUD_PROJECT_URL/storage/v1/object/list/$BUCKET")
+      -H "Authorization: Bearer $CLOUD_SERVICE_KEY" \
+      -H "apikey: $CLOUD_SERVICE_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"prefix":""}' \
+      "$CLOUD_PROJECT_URL/storage/v1/object/list/$BUCKET")
 
   echo "$OBJECTS" | jq -r '.[]?.name' | while read NAME; do
     echo "⬇️ $NAME"
     mkdir -p "/tmp/bucket_export/$BUCKET/$(dirname "$NAME")"
-
     curl -s \
       -H "Authorization: Bearer $CLOUD_SERVICE_KEY" \
       -H "apikey: $CLOUD_SERVICE_KEY" \
@@ -58,7 +71,7 @@ echo "$BUCKETS" | jq -r '.[].name' | while read BUCKET; do
   done
 done
 
-echo "🚀 Uploading to Self-hosted Storage..."
+echo "🚀 Uploading buckets to local storage..."
 for BUCKET in $(ls /tmp/bucket_export); do
 
   curl -s -X POST \
@@ -79,4 +92,4 @@ for BUCKET in $(ls /tmp/bucket_export); do
   done
 done
 
-echo "🎉 Migration completed successfully!"
+echo "🎉 Migration completed!"

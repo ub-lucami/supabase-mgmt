@@ -10,6 +10,8 @@ services:
       - supabase_default
     volumes:
       - /home/docker/secrets/migration.env:/config/migration.env:ro
+      - /var/run/docker.sock:/var/run/docker.sock 
+      - /tmp:/tmp
     tty: true
 
 networks:

@@ -7,7 +7,6 @@ YELLOW := \033[1;33m
 CYAN := \033[0;36m
 RESET := \033[0m
 
-
 help:
 	@echo ""
 	@echo -e "${CYAN}SUPABASE MANAGEMENT CONTAINER COMMANDS${RESET}"
@@ -22,10 +21,10 @@ help:
 	@echo -e "${GREEN}make build${RESET}     - zgradi mgmt container"
 	@echo -e "${GREEN}make rebuild${RESET}   - zgradi brez cache (priporočeno po spremembah)"
 	@echo -e "${GREEN}make run${RESET}       - zaženi migracijo"
-	@echo -e "${GREEN}make dry-run${RESET}   - zaženi preizkus migracije"
+	@echo -e "${GREEN}make dry-run${RESET}   - preizkusi Cloud/Lokalne povezave"
 	@echo -e "${GREEN}make shell${RESET}     - odpri bash v mgmt containerju"
 	@echo -e "${GREEN}make log${RESET}       - izpiši zadnje loge migracije"
-	@echo -e "${GREEN}make clean${RESET}     - pobriši vse slike in kontejnarje"
+	@echo -e "${GREEN}make clean${RESET}     - pobriši slike in kontejnarje"
 	@echo ""
 
 build:
@@ -35,33 +34,36 @@ rebuild:
 	docker compose build --no-cache
 
 run:
-	@echo "${YELLOW}Starting migration...${RESET}"
+	@echo -e "${YELLOW}Starting migration...${RESET}"
 	docker compose run --rm mgmt
 
 dry-run:
-	@echo -e "${YELLOW}=== DRY RUN: CHECKING ENV, NETWORK & ACCESS ===${RESET}"
-	@echo "🔍 Checking if migration.env is mounted..."
-	docker compose run --rm mgmt sh -c 'test -f /config/migration.env && echo "✔ migration.env OK" || echo "❌ migration.env missing"'
+	@echo -e "${YELLOW}=== DRY RUN: CHECKING ENV, DOCKER, NETWORK & ACCESS ===${RESET}"
+	@echo "🔍 Checking docker.sock..."
+	docker compose run --rm --entrypoint "" mgmt sh -c 'test -S /var/run/docker.sock && echo "✔ docker.sock OK" || echo "❌ docker.sock missing"'
 	@echo ""
-	@echo "🔍 Checking Supabase CLI..."
-	docker compose run --rm mgmt sh -c 'supabase --version && echo "✔ Supabase CLI OK"'
+	@echo "🔍 Checking if migration.env is mounted..."
+	docker compose run --rm --entrypoint "" mgmt sh -c 'test -f /config/migration.env && echo "✔ migration.env OK" || echo "❌ migration.env missing"'
+	@echo ""
+	@echo "🔍 Checking Supabase CLI Docker image..."
+	docker run --rm supabase/cli:latest --version
 	@echo ""
 	@echo "🔍 Checking Cloud API availability..."
-	docker compose run --rm mgmt sh -c 'source /config/migration.env && curl -s -o /dev/null -w "%{http_code}" $$CLOUD_PROJECT_URL/auth/v1/health'
+	docker compose run --rm --entrypoint "" mgmt sh -c 'source /config/migration.env && curl -s -o /dev/null -w "%{http_code}\n" $$CLOUD_PROJECT_URL/auth/v1/health'
 	@echo ""
 	@echo "🔍 Checking local Kong API..."
-	docker compose run --rm mgmt sh -c 'curl -s -o /dev/null -w "%{http_code}" http://kong:8000'
+	docker compose run --rm --entrypoint "" mgmt sh -c 'curl -s -o /dev/null -w "%{http_code}\n" http://kong:8000'
 	@echo ""
 	@echo "🔍 Checking local Postgres..."
-	docker compose run --rm mgmt sh -c 'source /config/migration.env && psql $$SELF_HOSTED_DB_URL -c "SELECT 1;"'
+	docker compose run --rm --entrypoint "" mgmt sh -c 'source /config/migration.env && psql $$SELF_HOSTED_DB_URL -c "SELECT 1;"'
 	@echo ""
 	@echo -e "${GREEN}Dry run complete.${RESET}"
 
 shell:
-	docker compose run --rm mgmt bash
+	docker compose run --rm --entrypoint "" mgmt bash
 
 log:
 	docker logs supabase-mgmt || true
 
 clean:
-	docker compose down --rmi all
+	docker compose down --rmi all --remove-orphans
