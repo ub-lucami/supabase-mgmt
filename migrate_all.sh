@@ -11,7 +11,7 @@ source /config/migration.env
 # SUPABASE CLI via NPX WRAPPER
 ########################################
 supabase() {
-  npx supabase "$@"
+  npx -y supabase "$@"
 }
 
 ########################################

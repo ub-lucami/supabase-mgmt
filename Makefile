@@ -47,7 +47,7 @@ dry-run:
 	docker compose run --rm --entrypoint "" mgmt sh -c 'test -f /config/migration.env && echo "✔ migration.env OK" || echo "❌ migration.env missing"'
 	@echo ""
 	@echo "🔍 Checking NPX Supabase CLI..."
-	docker compose run --rm --entrypoint "" mgmt sh -c 'npx supabase --version || echo "❌ npx supabase failed"'
+	docker compose run --rm --entrypoint "" mgmt sh -c 'npx -y supabase --version || echo "❌ npx supabase failed"'
 	@echo ""
 	@echo "🔍 Checking Cloud API availability..."
 	docker compose run --rm --entrypoint "" mgmt sh -c 'source /config/migration.env && curl -s -o /dev/null -w "%{http_code}\n" "$$CLOUD_PROJECT_URL/auth/v1/health"'
