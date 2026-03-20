@@ -7,11 +7,11 @@ RUN apt-get update && \
 
 RUN rm -f /usr/local/bin/supabase
 
-# Install Supabase CLI (stable LTS)
-RUN curl -sLo /usr/local/bin/supabase \
-    https://github.com/supabase/cli/releases/download/v1.188.7/supabase_linux_amd64 && \
-    chmod +x /usr/local/bin/supabase
-
+# Install Supabase CLI (stable LTS v1.188.7)
+RUN curl -sL \
+  https://github.com/supabase/cli/releases/download/v1.188.7/supabase_linux_amd64 \
+  -o /usr/local/bin/supabase && \
+  chmod +x /usr/local/bin/supabase
 
 WORKDIR /scripts
 
