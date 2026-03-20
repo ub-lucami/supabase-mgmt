@@ -22,6 +22,7 @@ help:
 	@echo -e "${GREEN}make build${RESET}     - zgradi mgmt container"
 	@echo -e "${GREEN}make rebuild${RESET}   - zgradi brez cache (priporočeno po spremembah)"
 	@echo -e "${GREEN}make run${RESET}       - zaženi migracijo"
+	@echo -e "${GREEN}make dry-run${RESET}   - zaženi preizkus migracije"
 	@echo -e "${GREEN}make shell${RESET}     - odpri bash v mgmt containerju"
 	@echo -e "${GREEN}make log${RESET}       - izpiši zadnje loge migracije"
 	@echo -e "${GREEN}make clean${RESET}     - pobriši vse slike in kontejnarje"
@@ -36,6 +37,25 @@ rebuild:
 run:
 	@echo "${YELLOW}Starting migration...${RESET}"
 	docker compose run --rm mgmt
+
+dry-run:
+	@echo "${YELLOW}=== DRY RUN: CHECKING ENV, NETWORK & ACCESS ===${RESET}"
+	@echo "🔍 Checking if migration.env is mounted..."
+	docker compose run --rm mgmt sh -c 'test -f /config/migration.env && echo "✔ migration.env OK" || echo "❌ migration.env missing"'
+	@echo ""
+	@echo "🔍 Checking Supabase CLI..."
+	docker compose run --rm mgmt sh -c 'supabase --version && echo "✔ Supabase CLI OK"'
+	@echo ""
+	@echo "🔍 Checking Cloud API availability..."
+	docker compose run --rm mgmt sh -c 'source /config/migration.env && curl -s -o /dev/null -w "%{http_code}" $$CLOUD_PROJECT_URL/auth/v1/health'
+	@echo ""
+	@echo "🔍 Checking local Kong API..."
+	docker compose run --rm mgmt sh -c 'curl -s -o /dev/null -w "%{http_code}" http://kong:8000'
+	@echo ""
+	@echo "🔍 Checking local Postgres..."
+	docker compose run --rm mgmt sh -c 'source /config/migration.env && psql $$SELF_HOSTED_DB_URL -c "SELECT 1;"'
+	@echo ""
+	@echo "${GREEN}Dry run complete.${RESET}"
 
 shell:
 	docker compose run --rm mgmt bash
