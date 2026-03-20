@@ -8,32 +8,32 @@ CYAN := \033[0;36m
 RESET := \033[0m
 
 help:
-    @echo ""
-    @echo "${CYAN}SUPABASE MANAGEMENT CONTAINER COMMANDS${RESET}"
-    @echo ""
-    @echo "${GREEN}make build${RESET}     - zgradi mgmt container"
-    @echo "${GREEN}make rebuild${RESET}   - zgradi brez cache (priporočeno po spremembah)"
-    @echo "${GREEN}make run${RESET}       - zaženi migracijo"
-    @echo "${GREEN}make shell${RESET}     - odpri bash v mgmt containerju"
-    @echo "${GREEN}make log${RESET}       - izpiši zadnje loge migracije"
-    @echo "${GREEN}make clean${RESET}     - pobriši vse slike in kontejnarje"
-    @echo ""
+	@echo ""
+	@echo "${CYAN}SUPABASE MANAGEMENT CONTAINER COMMANDS${RESET}"
+	@echo ""
+	@echo "${GREEN}make build${RESET}     - zgradi mgmt container"
+	@echo "${GREEN}make rebuild${RESET}   - zgradi brez cache (priporočeno po spremembah)"
+	@echo "${GREEN}make run${RESET}       - zaženi migracijo"
+	@echo "${GREEN}make shell${RESET}     - odpri bash v mgmt containerju"
+	@echo "${GREEN}make log${RESET}       - izpiši zadnje loge migracije"
+	@echo "${GREEN}make clean${RESET}     - pobriši vse slike in kontejnarje"
+	@echo ""
 
 build:
-    docker compose build
+	docker compose build
 
 rebuild:
-    docker compose build --no-cache
+	docker compose build --no-cache
 
 run:
-    @echo "${YELLOW}Starting migration...${RESET}"
-    docker compose run --rm mgmt
+	@echo "${YELLOW}Starting migration...${RESET}"
+	docker compose run --rm mgmt
 
 shell:
-    docker compose run --rm mgmt bash
+	docker compose run --rm mgmt bash
 
 log:
-    docker logs supabase-mgmt || true
+	docker logs supabase-mgmt || true
 
 clean:
-    docker compose down --rmi all
+	docker compose down --rmi all
