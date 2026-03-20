@@ -7,11 +7,11 @@ services:
       dockerfile: Dockerfile
     container_name: supabase-mgmt
     networks:
-      - supabase-network
+      - supabase_default
     volumes:
-      - /home/docker/secrets/migration.env:/config/migration.env:ro
+      - /home/youruser/secrets/migration.env:/config/migration.env:ro
     tty: true
 
 networks:
-  supabase-network:
+  supabase_default:
     external: true
