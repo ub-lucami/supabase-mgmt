@@ -8,7 +8,8 @@ WORKDIR /scripts
 
 COPY migrate_all.sh .
 COPY entrypoint.sh .
-
+COPY cloud_size_check.sh .
+RUN chmod +x cloud_size_check.sh
 RUN chmod +x migrate_all.sh entrypoint.sh
 RUN mkdir /config
 
