@@ -6,49 +6,31 @@ echo "  Supabase Cloud Size Report (No IPv6)"
 echo "======================================="
 echo ""
 
-# Load secrets
 . /config/migration.env
 
+HEADER="-H apikey: $CLOUD_SERVICE_KEY -H Authorization: Bearer $CLOUD_SERVICE_KEY"
+
 #######################################
-# 1) Database Size (via SQL API)
+# DATABASE SIZE
 #######################################
 
-echo "🔍 Checking database size..."
+echo "🔍 Fetching database size..."
 
-DB_SIZE=$(curl -s \
+DB=$(curl -s \
   -H "apikey: $CLOUD_SERVICE_KEY" \
   -H "Authorization: Bearer $CLOUD_SERVICE_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"query":"SELECT pg_size_pretty(pg_database_size(current_database())) AS size;"}' \
-  "$CLOUD_PROJECT_URL/rest/v1/rpc/sql" \
-  | jq -r '.[0].size'
-)
+  "$CLOUD_PROJECT_URL/platform/usage/db_size")
 
-echo "📦 Database size: $DB_SIZE"
+DB_SIZE=$(echo "$DB" | jq -r '.db_size' 2>/dev/null)
+
+echo "📦 Database size: $(numfmt --to=iec $DB_SIZE 2>/dev/null)"
 echo ""
 
 #######################################
-# 2) Table Sizes (via SQL API)
+# STORAGE BUCKET LIST
 #######################################
 
-echo "🔍 Checking table sizes (top 20)..."
-
-TABLE_SIZES=$(curl -s \
-  -H "apikey: $CLOUD_SERVICE_KEY" \
-  -H "Authorization: Bearer $CLOUD_SERVICE_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"query":"SELECT relname AS table, pg_size_pretty(pg_total_relation_size(relid)) AS total FROM pg_catalog.pg_statio_user_tables ORDER BY pg_total_relation_size(relid) DESC LIMIT 20;"}' \
-  "$CLOUD_PROJECT_URL/rest/v1/rpc/sql")
-
-echo "$TABLE_SIZES" | jq . 
-echo ""
-
-
-#######################################
-# 3) Storage Bucket List
-#######################################
-
-echo "🔍 Getting bucket list..."
+echo "🔍 Fetching buckets..."
 
 BUCKETS=$(curl -s \
   -H "apikey: $CLOUD_SERVICE_KEY" \
@@ -60,39 +42,37 @@ echo "$BUCKETS"
 echo ""
 
 #######################################
-# 4) Storage bucket sizes
+# STORAGE SIZE
 #######################################
 
 TOTAL_BYTES=0
 
 echo "🔍 Calculating storage usage..."
 
-for BUCKET in $BUCKETS; do
-  echo "➡️ Bucket: $BUCKET"
-
-  OBJECTS=$(curl -s -X POST \
+for B in $BUCKETS; do
+  OBJ=$(curl -s \
     -H "apikey: $CLOUD_SERVICE_KEY" \
     -H "Authorization: Bearer $CLOUD_SERVICE_KEY" \
-    -H "Content-Type: application/json" \
-    -d '{"prefix":""}' \
-    "$CLOUD_PROJECT_URL/storage/v1/object/list/$BUCKET")
+    "$CLOUD_PROJECT_URL/platform/usage/storage/$B")
 
-  BUCKET_BYTES=$(echo "$OBJECTS" | jq '[.[].metadata.size] | add')
-  BUCKET_BYTES=${BUCKET_BYTES:-0}
+  SIZE=$(echo "$OBJ" | jq -r '.usage_bytes // 0')
+  TOTAL_BYTES=$((TOTAL_BYTES + SIZE))
 
-  HUMAN=$(numfmt --to=iec $BUCKET_BYTES 2>/dev/null || echo "${BUCKET_BYTES}B")
-
-  echo "   size: $HUMAN"
-  TOTAL_BYTES=$((TOTAL_BYTES + BUCKET_BYTES))
+  HUMAN=$(numfmt --to=iec $SIZE 2>/dev/null)
+  echo "➡ Bucket $B: $HUMAN"
 done
 
+TOTAL_HUMAN=$(numfmt --to=iec $TOTAL_BYTES)
 echo ""
-TOTAL_HUMAN=$(numfmt --to=iec $TOTAL_BYTES 2>/dev/null || echo "${TOTAL_BYTES}B")
 echo "📦 Total storage size: $TOTAL_HUMAN"
 echo ""
 
+#######################################
+# SUMMARY
+#######################################
+
 echo "======================================="
 echo " SUMMARY"
-echo " Database: $DB_SIZE"
+echo " Database: $(numfmt --to=iec $DB_SIZE)"
 echo " Storage : $TOTAL_HUMAN"
 echo "======================================="
