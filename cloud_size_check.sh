@@ -8,61 +8,72 @@ echo ""
 
 . /config/migration.env
 
-HEADER="-H apikey: $CLOUD_SERVICE_KEY -H Authorization: Bearer $CLOUD_SERVICE_KEY"
-
 #######################################
-# DATABASE SIZE
+# 1) DATABASE SIZE via PostgREST
 #######################################
 
 echo "🔍 Fetching database size..."
 
-DB=$(curl -s \
+DB_QUERY='SELECT pg_size_pretty(pg_database_size(current_database())) AS size'
+
+DB_RESPONSE=$(curl -s \
   -H "apikey: $CLOUD_SERVICE_KEY" \
   -H "Authorization: Bearer $CLOUD_SERVICE_KEY" \
-  "$CLOUD_PROJECT_URL/platform/usage/db_size")
+  -H "Content-Type: application/json" \
+  --data "{\"query\":\"$DB_QUERY\"}" \
+  "$CLOUD_PROJECT_URL/rest/v1/rpc/sql")
 
-DB_SIZE=$(echo "$DB" | jq -r '.db_size' 2>/dev/null)
+DB_SIZE=$(echo "$DB_RESPONSE" | jq -r '.[0].size // empty')
 
-echo "📦 Database size: $(numfmt --to=iec $DB_SIZE 2>/dev/null)"
+echo "📦 Database size: ${DB_SIZE:-Unknown}"
 echo ""
 
 #######################################
-# STORAGE BUCKET LIST
+# 2) STORAGE BUCKETS
 #######################################
 
-echo "🔍 Fetching buckets..."
+echo "🔍 Fetching bucket list..."
 
 BUCKETS=$(curl -s \
   -H "apikey: $CLOUD_SERVICE_KEY" \
   -H "Authorization: Bearer $CLOUD_SERVICE_KEY" \
-  "$CLOUD_PROJECT_URL/storage/v1/bucket" | jq -r '.[].name')
+  "$CLOUD_PROJECT_URL/storage/v1/bucket" \
+  | jq -r '.[].name')
 
 echo "📦 Buckets:"
 echo "$BUCKETS"
 echo ""
 
 #######################################
-# STORAGE SIZE
+# 3) STORAGE SIZES
 #######################################
 
 TOTAL_BYTES=0
 
 echo "🔍 Calculating storage usage..."
 
-for B in $BUCKETS; do
-  OBJ=$(curl -s \
+for BUCKET in $BUCKETS; do
+  echo "➡️ Bucket: $BUCKET"
+
+  OBJECTS=$(curl -s -X POST \
     -H "apikey: $CLOUD_SERVICE_KEY" \
     -H "Authorization: Bearer $CLOUD_SERVICE_KEY" \
-    "$CLOUD_PROJECT_URL/platform/usage/storage/$B")
+    -H "Content-Type: application/json" \
+    -d '{"prefix":""}' \
+    "$CLOUD_PROJECT_URL/storage/v1/object/list/$BUCKET")
 
-  SIZE=$(echo "$OBJ" | jq -r '.usage_bytes // 0')
-  TOTAL_BYTES=$((TOTAL_BYTES + SIZE))
+  # Sum sizes correctly (handles missing .metadata.size safely)
+  BUCKET_BYTES=$(echo "$OBJECTS" | jq '[.[].metadata.size // 0] | add')
 
-  HUMAN=$(numfmt --to=iec $SIZE 2>/dev/null)
-  echo "➡ Bucket $B: $HUMAN"
+  HUMAN=$(numfmt --to=iec $BUCKET_BYTES 2>/dev/null || echo "${BUCKET_BYTES}B")
+
+  echo "   size: $HUMAN"
+
+  TOTAL_BYTES=$((TOTAL_BYTES + BUCKET_BYTES))
 done
 
 TOTAL_HUMAN=$(numfmt --to=iec $TOTAL_BYTES)
+
 echo ""
 echo "📦 Total storage size: $TOTAL_HUMAN"
 echo ""
@@ -73,6 +84,6 @@ echo ""
 
 echo "======================================="
 echo " SUMMARY"
-echo " Database: $(numfmt --to=iec $DB_SIZE)"
+echo " Database: ${DB_SIZE:-Unknown}"
 echo " Storage : $TOTAL_HUMAN"
 echo "======================================="
