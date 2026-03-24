@@ -1,13 +1,19 @@
 version: "3.9"
+
 services:
   mgmt:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: supabase-mgmt
-    network_mode: bridge
+    networks:
+      - supabase_default
     volumes:
       - /home/docker/secrets/migration.env:/config/migration.env:ro
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock 
       - /tmp:/tmp
     tty: true
+
+networks:
+  supabase_default:
+    external: true
