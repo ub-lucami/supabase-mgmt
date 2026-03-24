@@ -1,63 +1,74 @@
 #!/bin/sh
 set -e
 
-. /config/migration.env
-
 echo "======================================="
-echo " Supabase Cloud Project Size Summary"
+echo " Supabase Cloud Size Report (IPv4 Safe)"
 echo "======================================="
 echo ""
 
-##############################################
-# DATABASE SIZE (working endpoint)
-##############################################
+. /config/migration.env
+
+HDR="-H apikey: $CLOUD_SERVICE_KEY -H Authorization: Bearer $CLOUD_SERVICE_KEY -H Content-Type: application/json"
+
+#############################################
+# DATABASE SIZE (via supported SQL passthrough)
+#############################################
 
 echo "🔍 Fetching database size..."
 
-DB=$(curl -s \
-  -H "Authorization: Bearer $CLOUD_SERVICE_KEY" \
-  -H "apikey: $CLOUD_SERVICE_KEY" \
-  "$CLOUD_PROJECT_URL/platform/usage/db")
+DB=$(curl -s $HDR \
+  -d '{"query":"SELECT pg_database_size(current_database()) AS size"}' \
+  "$CLOUD_PROJECT_URL/rest/v1/rpc/pass_through")
 
-# API returns: {"db_size":1234567}
-DB_SIZE=$(echo "$DB" | jq -r '.db_size // 0')
+DB_SIZE=$(echo "$DB" | jq -r '.[0].size // 0')
 DB_HUMAN=$(numfmt --to=iec $DB_SIZE 2>/dev/null)
 
 echo "📦 Database size: $DB_HUMAN"
 echo ""
 
-##############################################
-# STORAGE SIZE (this already worked)
-##############################################
+#############################################
+# STORAGE BUCKET LIST
+#############################################
 
 echo "🔍 Fetching buckets..."
-BUCKETS=$(curl -s \
-  -H "Authorization: Bearer $CLOUD_SERVICE_KEY" \
-  -H "apikey: $CLOUD_SERVICE_KEY" \
-  "$CLOUD_PROJECT_URL/storage/v1/bucket" \
-  | jq -r '.[].name')
 
-echo "Buckets:"
+BUCKETS=$(curl -s \
+  -H "apikey: $CLOUD_SERVICE_KEY" \
+  -H "Authorization: Bearer $CLOUD_SERVICE_KEY" \
+  "$CLOUD_PROJECT_URL/storage/v1/bucket" | jq -r '.[].name')
+
+echo "📦 Buckets:"
 echo "$BUCKETS"
 echo ""
 
-TOTAL=0
+#############################################
+# STORAGE SIZE (safe parsing)
+#############################################
 
-echo "🔍 Calculating storage usage (per bucket)..."
+TOTAL=0
+echo "🔍 Calculating storage usage..."
 
 for B in $BUCKETS; do
-  ST=$(curl -s \
-    -H "Authorization: Bearer $CLOUD_SERVICE_KEY" \
+  echo "➡ $B"
+
+  RAW=$(curl -s \
     -H "apikey: $CLOUD_SERVICE_KEY" \
-    "$CLOUD_PROJECT_URL/storage/v1/object/list/$B?limit=10000" \
-    | jq '[.[].metadata.size // 0] | add')
+    -H "Authorization: Bearer $CLOUD_SERVICE_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{"prefix":""}' \
+    "$CLOUD_PROJECT_URL/storage/v1/object/list/$B")
 
-  ST=${ST:-0}
-  HUMAN=$(numfmt --to=iec $ST 2>/dev/null)
+  # Če je string (prazno "{}"), vrni 0
+  if echo "$RAW" | jq -e 'type=="array"' >/dev/null 2>&1; then
+      BYTES=$(echo "$RAW" | jq '[.[].metadata.size // 0] | add')
+  else
+      BYTES=0
+  fi
 
-  echo "➡ $B: $HUMAN"
+  HUMAN=$(numfmt --to=iec $BYTES 2>/dev/null)
+  echo "   size: $HUMAN"
 
-  TOTAL=$(( TOTAL + ST ))
+  TOTAL=$((TOTAL + BYTES))
 done
 
 TOTAL_HUMAN=$(numfmt --to=iec $TOTAL)
