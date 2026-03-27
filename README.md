@@ -1,5 +1,9 @@
 # Supabase Migration Manager
+## CAUTION: does not work well in the end I only used this container as a shell for sql migration
 
+```
+docker compose run --rm --entrypoint bash mgmt
+```
 This repository contains a **management Docker container** that safely migrates:
 
 - Supabase Cloud → Self-Hosted Supabase
